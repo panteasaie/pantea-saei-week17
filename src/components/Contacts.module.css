@@ -23,6 +23,16 @@
     color: #304ffe;
     font-size: 1rem;
 }
+ .field{
+    display: flex;
+    flex-direction: column;
+ }
+ .errorWrapper{
+    min-height: 16px;
+ }
+ .errorText{
+    color: #dc2626;
+ }
 .form button{
     width: calc(90% + 20px);
     height: 40px;

@@ -12,9 +12,21 @@ import {
   useContactsDispatch,
   useContactsState,
 } from "../contexts/ContactsContext";
+import ContactForm from "./ContactForm";
 
 function Contacts() {
-  const { contacts, loading, error, selectIds ,addContact,updateContact,deleteContact,deleteGroupContact,toggleSelect,clearSelect} = useContactsState();
+  const {
+    contacts,
+    loading,
+    error,
+    selectIds,
+    addContact,
+    updateContact,
+    deleteContact,
+    deleteGroupContact,
+    toggleSelect,
+    clearSelect,
+  } = useContactsState();
   const dispatch = useContactsDispatch();
 
   const [alert, setAlert] = useState("");
@@ -41,6 +53,8 @@ function Contacts() {
   const [search, setSearch] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const[editingContact,setEditingContact]=useState(null)
+  const[currentId,setCurrentId]=useState(null)
   const changeHandler = (event) => {
     const { name, value } = event.target;
     setContact((prev) => ({ ...prev, [name]: value }));
@@ -74,14 +88,12 @@ function Contacts() {
     const editContact = contacts.find((contact) => contact.id === id);
 
     if (!editContact) return;
-    setContact({
-      name: editContact.name,
-      lastName: editContact.lastName,
-      email: editContact.email,
-      phone: editContact.phone,
-    });
+    setEditingContact(
+  editContact
+    );
     setIsEditOpen(true);
     setEdit(id);
+    setCurrentId(id)
   };
   const requestSaveEdit = () => {
     const candidate = { id: edit, ...contact };
@@ -119,7 +131,7 @@ function Contacts() {
     );
   });
   const confirmGroupDelete = () => {
-    if(selectIds.length===0)return;
+    if (selectIds.length === 0) return;
     deleteGroupContact(selectIds);
     clearSelect();
     setConfirmDelete(false);
@@ -153,9 +165,7 @@ function Contacts() {
       return;
     }
 
-
     await addContact(contact);
-
 
     setContact({
       name: "",
@@ -167,38 +177,7 @@ function Contacts() {
     setIsAddOpen(false);
   };
 
-  const validatefield = (field, rawValue) => {
-    const v = String(rawValue ?? "");
-    const t = v.trim();
 
-    if (field === "name") {
-      if (!t) return "نام الزامیست";
-      if (t.length < 2) return "حداقل 2 کارکتر!";
-      return null;
-    }
-    if (field === "latName") {
-      if (!t) return "نام خانوادگی الزامیست";
-      if (t.length < 2) return "حداقل 2 کارکتر";
-      return null;
-    }
-    if (field === "email") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!t) return "ایمیل الزامیست";
-      if (!emailRegex.test(t)) return "فرمت ایمیل نامعتبر است";
-
-      const isDublicate = contacts.some(
-        (c) => c.email.toLowerCase() === t.toLowerCase()
-      );
-      if (isDublicate) return "این ایمیل قبلا ثبت شده";
-      return null;
-    }
-    if (field === "phone") {
-      if (!t) return null;
-      if (!/^\+?\d{8,15}$/.test(t)) return "شماره نامعتبر";
-      return null;
-    }
-    return null;
-  };
 
   const handleBlur = (event) => {
     const { name } = event.target;
@@ -214,39 +193,7 @@ function Contacts() {
             toggleHandler={toggleHandler}
           />
         </div>
-        <div className={styles.form}>
-          {!isAddOpen && (
-            <>
-              {inputs.map((input, index) => (
-                <div key={index}>
-                  <input
-                    key={index}
-                    type={input.type}
-                    placeholder={input.placeholder}
-                    name={input.name}
-                    value={contact[input.name]}
-                    onChange={changeHandler}
-                    onBlur={handleBlur}
-                  />
-                  {touch[input.name] && errors[input.name] && (
-                    <p className={styles.errorText}>{errors[input.name]}</p>
-                  )}
-                </div>
-              ))}
-              <button
-                onClick={() => {
-                  if (isEditOpen) {
-                    requestSaveEdit();
-                  } else {
-                    handleAddSubmit();
-                  }
-                }}
-              >
-                {isEditOpen ? "save changes" : "add contact"}
-              </button>
-            </>
-          )}
-        </div>
+       
 
         <div className={styles.alert}>{alert && <p>{alert}</p>}</div>
 
@@ -263,6 +210,12 @@ function Contacts() {
             ></div>
           </div>
         )}
+      <ContactForm
+      defaultValues={isEditOpen && editingContact?editingContact:{firstName:"",lastName:"",email:"",phone:""}}
+      contacts={contacts}
+      submitLabel={isEditOpen?"Save Changes":"Add Contact"}
+      onSubmit={isEditOpen?updateContact:addContact}
+      currentId={currentId}/>
         <ContactsList
           contacts={filterContact}
           handleDelete={handleDelete}
@@ -282,7 +235,7 @@ function Contacts() {
             onCancel={cancelSaveHandler}
           />
         )}
-        { selectIds.length > 0 && (
+        {selectIds.length > 0 && (
           <button
             onClick={() => setConfirmDelete(true)}
             className={styles.deleteBtn}
